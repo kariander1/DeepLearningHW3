@@ -62,7 +62,8 @@ def chars_to_onehot(text: str, char_to_idx: dict) -> Tensor:
     """
     # TODO: Implement the embedding.
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    indices = torch.tensor([char_to_idx[c] for c in text])
+    result = (torch.nn.functional.one_hot(indices, len(char_to_idx))).type(torch.int8)
     # ========================
     return result
 
@@ -79,7 +80,8 @@ def onehot_to_chars(embedded_text: Tensor, idx_to_char: dict) -> str:
     """
     # TODO: Implement the reverse-embedding.
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    indices = torch.argmax(embedded_text,dim=1)
+    result = ''.join([idx_to_char[i.item()] for i in indices])
     # ========================
     return result
 
@@ -108,7 +110,18 @@ def chars_to_labelled_samples(text: str, char_to_idx: dict, seq_len: int, device
     #  3. Create the labels tensor in a similar way and convert to indices.
     #  Note that no explicit loops are required to implement this function.
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    S = seq_len
+    N = (len(text) - 1) // S
+    V = len(char_to_idx)
+
+    embedded_text = chars_to_onehot(text, char_to_idx)
+    n_trailing_char = embedded_text.shape[0] - S * N
+
+    labels_vec = torch.argmax(embedded_text[1:(-n_trailing_char + 1), :],dim=1)
+
+    labels = torch.reshape(labels_vec, (N, S))
+
+    samples = torch.reshape(embedded_text[:-n_trailing_char], (N, S, V))
     # ========================
     return samples, labels
 
@@ -193,7 +206,10 @@ class SequenceBatchSampler(torch.utils.data.Sampler):
         #  you can drop it.
         idx = None  # idx should be a 1-d list of indices.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        n_batches = self.__len__() // self.batch_size
+        n_effective = n_batches * self.batch_size
+        idx = torch.reshape(torch.tensor(range(0, n_effective)), (self.batch_size, n_batches)).T
+        idx = torch.flatten(idx).tolist()
         # ========================
         return iter(idx)
 
