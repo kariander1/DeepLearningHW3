@@ -82,7 +82,8 @@ class LeakyReLU(Layer):
 
         # TODO: Implement the LeakyReLU operation.
         # ====== YOUR CODE: ======
-        out = torch.max(x,self.alpha*x)
+        #out = torch.max(x,self.alpha*x)
+        out = self.alpha * x * (x < 0) + x * (x > 0)
         # ========================
 
         self.grad_cache["x"] = x
@@ -97,7 +98,8 @@ class LeakyReLU(Layer):
 
         # TODO: Implement gradient w.r.t. the input x
         # ====== YOUR CODE: ======
-        dx = (torch.max(x,self.alpha*x) / x)*dout
+        #dx = torch.where(x < 0, self.alpha * dout, dout)
+        dx = (self.alpha * (x < 0) + (x > 0)) * dout
         # ========================
 
         return dx
@@ -320,7 +322,6 @@ class CrossEntropyLoss(Layer):
         exponent = torch.exp(x)
         sum = torch.sum(exponent, dim=1)
         loss = torch.sum(-x_y + torch.log(sum))/N
-        # TODO: what to save in x,y
         # ========================
 
         self.grad_cache["x"] = x
@@ -368,7 +369,12 @@ class Dropout(Layer):
         #  Notice that contrary to previous layers, this layer behaves
         #  differently a according to the current training_mode (train/test).
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        out = x
+
+        if self.training_mode:
+            drop_mask = (torch.rand(x.shape) > self.p) / (1 - self.p)
+            self.grad_cache["drop_mask"] = drop_mask
+            out = (x * drop_mask)
         # ========================
 
         return out
@@ -376,7 +382,9 @@ class Dropout(Layer):
     def backward(self, dout):
         # TODO: Implement the dropout backward pass.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        dx = dout
+        if self.training_mode:
+            dx = dout * self.grad_cache["drop_mask"]
         # ========================
 
         return dx
@@ -495,12 +503,14 @@ class MLP(Layer):
             "relu": ReLU,
             "sigmoid": Sigmoid
         }
-        modified_layers = hidden_features
+        modified_layers = list.copy(hidden_features)
         modified_layers.append(num_classes)
         i_layer = 0
         layers.append(Linear(in_features, modified_layers[i_layer], **kw))
         for i_layer in range(0, len(modified_layers) - 1):
             layers.append(activation_dict[activation]())
+            if dropout > 0.0:
+                layers.append(Dropout(dropout))
             layers.append(Linear(modified_layers[i_layer], modified_layers[i_layer + 1], **kw))
         layers = tuple(layers)
         # ========================

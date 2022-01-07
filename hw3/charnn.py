@@ -23,7 +23,9 @@ def char_maps(text: str):
     #  It's best if you also sort the chars before assigning indices, so that
     #  they're in lexical order.
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    sorted_chars = sorted(set(text))
+    idx_to_char = {i: sorted_chars[i] for i in range(0, len(sorted_chars))}
+    char_to_idx = {v: k for k, v in idx_to_char.items()}
     # ========================
     return char_to_idx, idx_to_char
 
@@ -39,7 +41,8 @@ def remove_chars(text: str, chars_to_remove):
     """
     # TODO: Implement according to the docstring.
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    text_clean = ''.join([c for c in text if c not in chars_to_remove])
+    n_removed = len(text) - len(text_clean)
     # ========================
     return text_clean, n_removed
 

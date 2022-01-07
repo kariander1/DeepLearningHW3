@@ -259,7 +259,7 @@ class LayerTrainer(Trainer):
         # ====== YOUR CODE: ======
         X = torch.flatten(X, start_dim=1, end_dim=-1)
 
-        y_hat = self.model.forward(X)
+        y_hat = self.model(X)
         loss = self.loss_fn.forward(y_hat, y)
 
         self.optimizer.zero_grad()
