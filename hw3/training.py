@@ -332,20 +332,25 @@ class TorchTrainer(Trainer):
 class RNNTrainer(Trainer):
     def __init__(self, model, loss_fn, optimizer, device=None):
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        self.loss_fn = loss_fn
+        self.optimizer = optimizer
+        self.device = device
+        self.hidden_states = None
+        # Use inherited Trainer c'tor:
+        super().__init__(model)
         # ========================
 
     def train_epoch(self, dl_train: DataLoader, **kw):
         # TODO: Implement modifications to the base method, if needed.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        self.hidden_states = None
         # ========================
         return super().train_epoch(dl_train, **kw)
 
     def test_epoch(self, dl_test: DataLoader, **kw):
         # TODO: Implement modifications to the base method, if needed.
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        self.hidden_states = None
         # ========================
         return super().test_epoch(dl_test, **kw)
 
@@ -363,7 +368,32 @@ class RNNTrainer(Trainer):
         #  - Update params
         #  - Calculate number of correct char predictions
         # ====== YOUR CODE: ======
-        raise NotImplementedError()
+        # Forward pass
+
+        y_hat, new_hidden_states = self.model(x, self.hidden_states)
+        self.hidden_states = new_hidden_states.detach()
+        # Calculate total loss over seq
+        loss = None
+        num_correct = torch.tensor(0)
+        for i in range(seq_len):
+            gt = y[:, i]
+            x_char = y_hat[:, i, :]
+            char_loss = self.loss_fn(x_char, gt)
+
+            _, y_indices = torch.max(x_char, dim=1)
+            num_correct = num_correct + (y_indices == gt).sum()
+
+            if loss is None:
+                loss = char_loss
+            else:
+                loss += char_loss
+
+        # Backward-pass + Update parameters
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
+
+
         # ========================
 
         # Note: scaling num_correct by seq_len because each sample has seq_len
