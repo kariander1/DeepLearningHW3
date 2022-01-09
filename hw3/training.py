@@ -368,12 +368,13 @@ class RNNTrainer(Trainer):
         #  - Update params
         #  - Calculate number of correct char predictions
         # ====== YOUR CODE: ======
-        # Forward pass
 
+        # Forward pass
         y_hat, new_hidden_states = self.model(x, self.hidden_states)
         y_hat = y_hat.to(self.device)
         new_hidden_states = new_hidden_states.to(self.device)
         self.hidden_states = new_hidden_states.detach()
+
         # Calculate total loss over seq
         loss = self.loss_fn(torch.transpose(y_hat, 1, 2), y)
 
@@ -405,7 +406,18 @@ class RNNTrainer(Trainer):
             #  - Loss calculation
             #  - Calculate number of correct predictions
             # ====== YOUR CODE: ======
-            raise NotImplementedError()
+            # Forward pass
+            y_hat, new_hidden_states = self.model(x, self.hidden_states)
+            y_hat = y_hat.to(self.device)
+            new_hidden_states = new_hidden_states.to(self.device)
+            self.hidden_states = new_hidden_states.detach()
+
+            # Calculate total loss over seq
+            loss = self.loss_fn(torch.transpose(y_hat, 1, 2), y)
+
+            # Calc correct
+            _, y_indices = torch.max(y_hat, dim=2)
+            num_correct = (y_indices == y).sum()
             # ========================
 
         return BatchResult(loss.item(), num_correct.item() / seq_len)
