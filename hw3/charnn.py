@@ -274,26 +274,25 @@ class MultilayerGRU(nn.Module):
             if i == 0:
                 in_features = in_dim
 
-            fc_xz = nn.Linear(in_features, out_features, bias=True)
-            fc_hz = nn.Linear(h_dim, out_features, bias=False)
+            fc_xz = nn.Linear(in_features, out_features, bias=False)
+            fc_hz = nn.Linear(h_dim, out_features, bias=True)
 
-            fc_xr = nn.Linear(in_features,out_features, bias=True)
-            fc_hr = nn.Linear(h_dim, out_features, bias=False)
+            fc_xr = nn.Linear(in_features,out_features, bias=False)
+            fc_hr = nn.Linear(h_dim, out_features, bias=True)
 
-            fc_xg = nn.Linear(in_features, out_features, bias=True)
-            fc_hg = nn.Linear(h_dim, out_features, bias=False)
+            fc_xg = nn.Linear(in_features, out_features, bias=False)
+            fc_hg = nn.Linear(h_dim, out_features, bias=True)
 
             layer_modules = nn.ModuleList([fc_xz, fc_hz, fc_xr, fc_hr, fc_xg, fc_hg])
             self.add_module("Layer " + str(i + 1), layer_modules)
             self.layer_params.append(layer_modules)
 
         output_module = nn.Linear(h_dim, out_dim, bias=True)
-        self.output_module = output_module
+        self.add_module("Output",output_module)
+        self.layer_params.append(output_module)
 
         if dropout > 0:
             self.dropout = nn.Dropout(dropout)
-        self.sigmoid = nn.Sigmoid()
-        self.tanh = nn.Tanh()
         # ========================
 
     def forward(self, input: Tensor, hidden_state: Tensor = None):
@@ -331,11 +330,12 @@ class MultilayerGRU(nn.Module):
         #  Tip: You can use torch.stack() to combine multiple tensors into a
         #  single tensor in a differentiable manner.
         # ====== YOUR CODE: ======
+        self.to(input.device)
         layer_output = []
-        S = input.shape[1]
+        S = layer_input.shape[1]
         for t in range(S):
-            xt = input[:, t, :]
-            for i, modules in enumerate(self.layer_params):
+            xt = layer_input[:, t, :]
+            for i, modules in enumerate(self.layer_params[:-1]):
                 fc_xz = modules[0]
                 fc_hz = modules[1]
 
@@ -347,17 +347,16 @@ class MultilayerGRU(nn.Module):
 
                 ht_prev = layer_states[i]
 
+                zt = torch.sigmoid(fc_xz(xt) + fc_hz(ht_prev))
+                rt = torch.sigmoid(fc_xr(xt) + fc_hr(ht_prev))
 
-                zt = self.sigmoid(fc_xz(xt) + fc_hz(ht_prev))
-                rt = self.sigmoid(fc_xr(xt) + fc_hr(ht_prev))
-
-                gt = self.tanh(fc_xg(xt) + fc_hg(rt * ht_prev))
+                gt = torch.tanh(fc_xg(xt) + fc_hg(rt * ht_prev))
                 ht = zt * ht_prev + (1 - zt) * gt
 
                 layer_states[i] = ht
                 # Input to next layer
                 xt = ht if not hasattr(self, 'dropout') else self.dropout(ht)
-            layer_output.append(self.output_module(ht))
+            layer_output.append(self.layer_params[-1](ht))
 
         hidden_state = torch.stack(layer_states, dim=1)
         layer_output = torch.stack(layer_output, dim=1)

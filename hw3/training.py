@@ -371,28 +371,20 @@ class RNNTrainer(Trainer):
         # Forward pass
 
         y_hat, new_hidden_states = self.model(x, self.hidden_states)
+        y_hat = y_hat.to(self.device)
+        new_hidden_states = new_hidden_states.to(self.device)
         self.hidden_states = new_hidden_states.detach()
         # Calculate total loss over seq
-        loss = None
-        num_correct = torch.tensor(0)
-        for i in range(seq_len):
-            gt = y[:, i]
-            x_char = y_hat[:, i, :]
-            char_loss = self.loss_fn(x_char, gt)
-
-            _, y_indices = torch.max(x_char, dim=1)
-            num_correct = num_correct + (y_indices == gt).sum()
-
-            if loss is None:
-                loss = char_loss
-            else:
-                loss += char_loss
+        loss = self.loss_fn(torch.transpose(y_hat, 1, 2), y)
 
         # Backward-pass + Update parameters
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
 
+        # Calc correct
+        _, y_indices = torch.max(y_hat, dim=2)
+        num_correct = (y_indices == y).sum()
 
         # ========================
 
