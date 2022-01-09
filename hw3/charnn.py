@@ -174,16 +174,20 @@ def generate_from_model(model, start_sequence, n_chars, char_maps, T):
     #  See torch.no_grad().
     # ====== YOUR CODE: ======
     out_text = start_sequence
+    input_to_model = start_sequence
     h_s = None
     with torch.no_grad():
         for i in range(n_chars-len(start_sequence)):
-            x = chars_to_onehot(out_text,char_to_idx)
-            y, h_s = model(torch.unsqueeze(x, dim=0).to(dtype=torch.float, device=device),h_s)
-            prob = hot_softmax(y[-1, -1, :], temperature=T)
+            x = chars_to_onehot(input_to_model, char_to_idx)
+            y, h_s = model(torch.unsqueeze(x, dim=0).to(dtype=torch.float, device=device), h_s)
 
-            char_index = torch.multinomial(prob, 1).item()
+            prob = hot_softmax(y[-1, -1, :], dim=0, temperature=T)
+            char_index = torch.multinomial(prob, 1, replacement=True).item()
             next_char = idx_to_char[char_index]
             out_text += next_char
+            input_to_model = next_char
+
+
     # ========================
 
     return out_text
