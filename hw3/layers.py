@@ -82,8 +82,7 @@ class LeakyReLU(Layer):
 
         # TODO: Implement the LeakyReLU operation.
         # ====== YOUR CODE: ======
-        #out = torch.max(x,self.alpha*x)
-        out = self.alpha * x * (x < 0) + x * (x > 0)
+        out =  x * (self.alpha * (x < 0) + (x > 0))
         # ========================
 
         self.grad_cache["x"] = x
@@ -98,8 +97,7 @@ class LeakyReLU(Layer):
 
         # TODO: Implement gradient w.r.t. the input x
         # ====== YOUR CODE: ======
-        #dx = torch.where(x < 0, self.alpha * dout, dout)
-        dx = (self.alpha * (x < 0) + (x > 0)) * dout
+        dx = (self.alpha * (x < 0) + (x > 0)) *dout
         # ========================
 
         return dx
@@ -108,7 +106,7 @@ class LeakyReLU(Layer):
         return []
 
     def __repr__(self):
-        return f"LeakyReLU({self.alpha=})"
+        return f"LeakyReLU({self.alpha})"
 
 
 class ReLU(LeakyReLU):
@@ -283,7 +281,7 @@ class Linear(Layer):
         return dx
 
     def __repr__(self):
-        return f"Linear({self.in_features=}, {self.out_features=})"
+        return f"Linear({self.in_features}, {self.out_features})"
 
 
 class CrossEntropyLoss(Layer):

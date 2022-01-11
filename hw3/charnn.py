@@ -173,7 +173,6 @@ def generate_from_model(model, start_sequence, n_chars, char_maps, T):
     #  necessary for this. Best to disable tracking for speed.
     #  See torch.no_grad().
     # ====== YOUR CODE: ======
-    out_text = start_sequence
     input_to_model = start_sequence
     h_s = None
     with torch.no_grad():
@@ -186,8 +185,6 @@ def generate_from_model(model, start_sequence, n_chars, char_maps, T):
             next_char = idx_to_char[char_index]
             out_text += next_char
             input_to_model = next_char
-
-
     # ========================
 
     return out_text

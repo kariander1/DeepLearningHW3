@@ -86,13 +86,13 @@ class Trainer(abc.ABC):
             train_result = self.train_epoch(dl_train, verbose=verbose, **kw)
             train_accuracy = train_result.accuracy
             train_losses = train_result.losses
-            train_acc.append(train_accuracy.item())
+            train_acc.append(train_accuracy)
             train_loss.append(sum(train_losses) / len(train_losses))
 
             test_result = self.test_epoch(dl_test, verbose=verbose, **kw)
             test_accuracy = test_result.accuracy
             test_losses = test_result.losses
-            test_acc.append(test_accuracy.item())
+            test_acc.append(test_accuracy)
             test_loss.append(sum(test_losses) / len(test_losses))
             # ========================
 
@@ -107,6 +107,9 @@ class Trainer(abc.ABC):
                 # There is improvement
                 epochs_without_improvement = 0
                 if checkpoints:
+                    checkpoints_path = os.path.dirname(checkpoints)
+                    if not os.path.isdir(checkpoints_path):
+                        os.mkdir(checkpoints_path)
                     self.save_checkpoint(checkpoints)
                 best_acc = test_accuracy
                 # ========================
@@ -129,7 +132,7 @@ class Trainer(abc.ABC):
         as a relative path).
         :param checkpoint_filename: File name or relative path to save to.
         """
-        torch.save(self.model, checkpoint_filename)
+        torch.save(dict(model_state=self.model.state_dict()), checkpoint_filename)
         print(f"\n*** Saved checkpoint {checkpoint_filename}")
 
     def train_epoch(self, dl_train: DataLoader, **kw) -> EpochResult:

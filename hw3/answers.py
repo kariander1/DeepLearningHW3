@@ -215,8 +215,8 @@ def part3_rnn_hyperparams():
     hypers['seq_len'] = 64
     hypers['h_dim'] = 750
     hypers['n_layers'] = 3
-    hypers['dropout'] = 0.48
-    hypers['learn_rate'] = 0.0011
+    hypers['dropout'] = 0.47
+    hypers['learn_rate'] = 0.001
     hypers['lr_sched_factor'] = 0.5
     hypers['lr_sched_patience'] = 2
     # ========================
@@ -228,7 +228,7 @@ def part3_generation_params():
     temperature = 0.0001
     # TODO: Tweak the parameters to generate a literary masterpiece.
     # ====== YOUR CODE: ======
-    raise NotImplementedError()
+    start_seq, temperature = "ACT I. SCENE I.\nA desert place. Thunder and lightning.", 0.55
     # ========================
     return start_seq, temperature
 
@@ -237,51 +237,58 @@ part3_q1 = r"""
 **Your answer:**
 
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+One reason that we have to split the whole text into sequences is that fitting the whole text into the memory will probably
+overfill it, and the training will not be able to proceed. splitting into sequences enables to split the load on the memory
+and the training can be done.
+
+Another reason for splitting the data into the sequences is to make sure that we don't experience an exploding/vanishing
+gradients as a result of chaining a large amount of gradients while back-propagating. Splitting into sequences will limit
+the amount of steps while back-propagating eliminating some of the vanishing/exploding gradients (hopefully).
 
 """
 
 part3_q2 = r"""
 **Your answer:**
 
-
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+It seems that although we have to memorize all the text generated which is longer than the sequence length, we do not allocate
+memory for the whole text generated. 
+By using the RNN architecture we utilize the only the hidden_states tensors which contains information on previous sequences
+to produce the generated text, and these tensors have a limited size in memory which does not accumulate between batches.
+Moreover we are detaching the hidden_states from memory between batches so that when backpropagating we won't accidentally back-propagate
+to the previous batch.
+All in all the memory required for the text generation is independent of the entire text size, as we don't memorize previous text
+(we memorize it in a sense that it is contained in the hidden_states).
 
 """
 
 part3_q3 = r"""
 **Your answer:**
 
-
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+We purposely constructed the batches such that each sample at index k in batch i is the continuation of the sample sample k
+at batch i-1. The reason for that was to create a logical sentences flow throughout the training.
+By shuffling the batches we will lose the logical information contained in this order, and the training will be less effective
+and might cause the model to generate non-sensical sentences and words. In this we we lose the context that is contained 
+in the hidden_states.
 
 """
 
 part3_q4 = r"""
 **Your answer:**
 
+1. As instructed, the softmax function tends to create a more uniform-like distributions of the score whenever the scores
+tend to be similar. This is not desired since we would like to predict for a given sequence the highest probable character,
+and we don't want to create a uniform distribution since it might cause some ambiguities between characters.
+In our case we prefer to lower the temperature to create a bigger variance in our samples.
 
-Write your answer using **markdown** and $\LaTeX$:
-```python
-# A code block
-a = 2
-```
-An equation: $e^{i\pi} -1 = 0$
+E.G we have a probability vector of $prob=(0.7,0.3)$ Where the probability of 0.6 predicts the correct label.
+
+2. When using a high temperature, we make the model less confident in a sense that all probabilities will tend to be closer,
+and such we get a more uniform distribution. In our example we can think of the probability vector transforming into something more
+uniform: $prob=(0.55,0.45)$
+
+3. On the contrary, using a low temperature will enforce a higher variance in the probabilities, and such the probability
+of the label predicted will be closer to 1, while others closer to 0, Thus making the model more confident. In our example
+we can think of the probability vector being more variant: $prob=(0.9,0.1)$
 
 """
 # ==============
